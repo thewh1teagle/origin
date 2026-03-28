@@ -16,6 +16,7 @@ def disc_step(y: torch.Tensor, y_hat: torch.Tensor, mpd: nn.Module, mrd: nn.Modu
     y_d_r_mrd, y_d_g_mrd, _, _ = mrd(y, y_hat.detach())
     d_loss, _, _ = loss_disc(y_d_r_mpd + y_d_r_mrd, y_d_g_mpd + y_d_g_mrd)
     d_loss.backward()
+    torch.nn.utils.clip_grad_norm_(list(mpd.parameters()) + list(mrd.parameters()), max_norm=1.0)
     opt_d.step()
     return d_loss
 
@@ -29,6 +30,7 @@ def gen_step(y: torch.Tensor, y_hat: torch.Tensor, mpd: nn.Module, mrd: nn.Modul
     recon = loss_recon(y_hat, y)
     g_loss = C.LAMBDA_RECON * recon + C.LAMBDA_ADV * adv + C.LAMBDA_FM * fm
     g_loss.backward()
+    torch.nn.utils.clip_grad_norm_(ae.parameters(), max_norm=1.0)
     opt_g.step()
     return g_loss, recon
 

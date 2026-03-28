@@ -57,9 +57,20 @@ The vocoder ONNX does 3 things internally:
 
 So the vocoder ONNX takes **compressed 144-dim latents** as input (not 24-dim). The 24-dim latent space exists at the PyTorch training level, but in the deployed ONNX the decompression is baked in.
 
+### Decoder head architecture (confirmed from tts.json)
+
+Config: `head: {idim: 512, hdim: 2048, odim: 512, ksz: 3}`
+
+Structure: `CausalConv1d(512→2048, ksz=3)` → `BatchNorm(2048)` → `PReLU` → `Linear(2048→512)` → flatten
+
+- `idim=512` matches decoder `hdim` (input from ConvNeXt blocks)
+- `hdim=2048` is the expanded intermediate
+- `odim=512` is the final frame-level channel count (flattened to waveform)
+- No extra same-dim linear — the expansion/projection is done by conv + one linear only
+
 ### fmin/fmax for mel spectrogram
 
-Not in tts.json or tts.yml. Referenced via `filter_bank_path` (internal file, not on HF).
+`tts.yml` contains `filter_bank_path` pointing to an internal Supertone file not on HuggingFace.
 However, given:
 - Sample rate: 44100 Hz
 - n_mels: 228 (unusually high)
@@ -73,12 +84,13 @@ Most likely `fmin=0, fmax=22050 (Nyquist)`. The high mel count (228) only makes 
 
 ### Autoencoder
 
-| Parameter | Paper | Actual | Notes |
+| Parameter | Paper | Actual (tts.json) | Notes |
 |-----------|-------|--------|-------|
-| Encoder input | mel (228) | **concat(linear, mel) = 1253** | Major undocumented detail |
-| fmin/fmax | not stated | unknown, likely 0/22050 | |
+| Encoder input | mel (228) | **concat(linear, mel) = 1253** | Confirmed from config `encoder.idim=1253` |
+| fmin/fmax | not stated | unknown, likely 0/22050 | `filter_bank_path` is internal |
 | Encoder dilation | not stated | all 1s | Non-dilated encoder |
 | Decoder dilation | [1,2,4,1,2,4,1,1,1,1] | [1,2,4,1,2,4,1,1,1,1] ✓ | |
+| Decoder head | CausalConv→BN→Linear→PReLU→Linear | **CausalConv→BN→PReLU→Linear** | No same-dim linear; confirmed from head config |
 | Latent normalizer scale | not stated | 0.25 (÷ in vocoder) | TTL output is divided by 0.25 |
 | Vocoder input | 24-dim latent | **144-dim compressed latent** | Decompression baked into vocoder ONNX |
 

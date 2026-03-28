@@ -7,8 +7,6 @@ LatentDecoder:  24-dim latents → waveform @ 44.1 kHz  (used at TTS inference)
 Architecture from arXiv:2503.23108 and confirmed via onnx_re/README.md.
 """
 
-from typing import List
-
 import torch
 import torchaudio
 from torch import nn
@@ -118,20 +116,23 @@ class LatentDecoder(nn.Module):
         ])
         self.norm_mid = nn.BatchNorm1d(hdim)
 
-        # Head: causal conv → linear → PReLU → linear → flatten to waveform
+        # Head: CausalConv1d(512→2048) → BatchNorm → PReLU → Linear(2048→512) → flatten
+        # Config: head {idim:512, hdim:2048, odim:512, ksz:3}
         self.head_conv = CausalConv1d(hdim, head_hdim, kernel_size=head_ksz)
-        self.head_linear = nn.Linear(head_hdim, head_odim)
+        self.head_norm = nn.BatchNorm1d(head_hdim)
         self.head_act = nn.PReLU()
+        self.head_linear = nn.Linear(head_hdim, head_odim)
 
     def forward(self, z: torch.Tensor) -> torch.Tensor:
         # z: (B, 24, T_latent)
         x = self.norm_in(self.conv_in(z))            # (B, 512, T)
         x = self.blocks(x)                           # (B, 512, T)
         x = self.norm_mid(x)
-        x = self.head_conv(x)                        # (B, 2048, T)
-        x = self.head_act(x.transpose(1, 2))         # PReLU before linear (B, T, 2048)
+        x = self.head_norm(self.head_conv(x))        # (B, 2048, T)
+        x = self.head_act(x.transpose(1, 2))         # PReLU (B, T, 2048)
         x = self.head_linear(x).transpose(1, 2)      # (B, 512, T)
         # Flatten: (B, 512, T) → (B, T*512) → (B, 1, T*512)
+        x = torch.tanh(x)
         B, C, T = x.shape
         return x.permute(0, 2, 1).reshape(B, 1, T * C)  # (B, 1, T_audio)
 
