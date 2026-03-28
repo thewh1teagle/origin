@@ -4,7 +4,7 @@ import torch
 import torchaudio
 from torch import nn
 
-from .modules import safe_log
+from .layers import safe_log
 
 
 class MultiResolutionMelLoss(nn.Module):

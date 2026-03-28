@@ -13,7 +13,7 @@ import torch
 import torchaudio
 from torch import nn
 
-from .modules import CausalConv1d, CausalConvNeXtBlock, ConvNeXtBlock, safe_log
+from .layers import CausalConv1d, CausalConvNeXtBlock, ConvNeXtBlock, safe_log
 
 
 class SpecProcessor(nn.Module):
