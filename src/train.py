@@ -69,8 +69,8 @@ def train(args: argparse.Namespace):
             y_hat = y_hat[..., : y.shape[-1]]
 
             opt_d.zero_grad()
-            y_d_r_mpd, y_d_g_mpd, _, _ = mpd(y, y_hat.detach())
-            y_d_r_mrd, y_d_g_mrd, _, _ = mrd(y, y_hat.detach())
+            y_d_r_mpd, y_d_g_mpd, fmap_mpd_r, fmap_mpd_g = mpd(y, y_hat.detach())
+            y_d_r_mrd, y_d_g_mrd, fmap_mrd_r, fmap_mrd_g = mrd(y, y_hat.detach())
             d_loss_mpd, _, _ = loss_disc(y_d_r_mpd, y_d_g_mpd)
             d_loss_mrd, _, _ = loss_disc(y_d_r_mrd, y_d_g_mrd)
             d_loss = d_loss_mpd + d_loss_mrd
