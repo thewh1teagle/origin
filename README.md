@@ -6,13 +6,13 @@ Speech autoencoder that encodes audio into a compact latent representation and r
 
 **1. Download and prepare the dataset** (LJSpeech-enhanced, ~14 GB):
 
-```bash
+```console
 ./scripts/train_prepare.sh
 ```
 
 **2. Train from scratch:**
 
-```bash
+```console
 ./scripts/train_scratch.sh
 ```
 
@@ -20,7 +20,7 @@ Checkpoints are saved to `checkpoints/` every 5000 steps (keeps last 3).
 
 **3. Test reconstruction** after training:
 
-```bash
+```console
 ./scripts/reconstruct.sh checkpoints/ae_0005000.pt input.wav output.wav
 ```
 
