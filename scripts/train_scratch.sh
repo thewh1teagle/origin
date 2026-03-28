@@ -8,4 +8,5 @@ uv run python -m src.train \
     --checkpoint_dir "$REPO_ROOT/checkpoints" \
     --batch_size 28 \
     --max_steps 1500000 \
-    --save_every 5000
+    --save_every 5000 \
+    "$@"

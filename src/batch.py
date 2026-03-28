@@ -21,7 +21,7 @@ def disc_step(y: torch.Tensor, y_hat: torch.Tensor, mpd: nn.Module, mrd: nn.Modu
     return d_loss
 
 
-def gen_step(y: torch.Tensor, y_hat: torch.Tensor, mpd: nn.Module, mrd: nn.Module, loss_gen: nn.Module, loss_fm: nn.Module, loss_recon: nn.Module, opt_g: Optimizer) -> Tuple[torch.Tensor, torch.Tensor]:
+def gen_step(y: torch.Tensor, y_hat: torch.Tensor, ae: nn.Module, mpd: nn.Module, mrd: nn.Module, loss_gen: nn.Module, loss_fm: nn.Module, loss_recon: nn.Module, opt_g: Optimizer) -> Tuple[torch.Tensor, torch.Tensor]:
     opt_g.zero_grad()
     _, y_d_g_mpd, fmap_r_mpd, fmap_g_mpd = mpd(y, y_hat)
     _, y_d_g_mrd, fmap_r_mrd, fmap_g_mrd = mrd(y, y_hat)

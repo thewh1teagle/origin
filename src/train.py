@@ -72,7 +72,7 @@ def train(args: argparse.Namespace):
             y_hat = ae(y).squeeze(1)[..., :y.shape[-1]]
 
             d_loss        = disc_step(y, y_hat, mpd, mrd, loss_disc, opt_d)
-            g_loss, recon = gen_step(y, y_hat, mpd, mrd, loss_gen, loss_fm, loss_recon, opt_g)
+            g_loss, recon = gen_step(y, y_hat, ae, mpd, mrd, loss_gen, loss_fm, loss_recon, opt_g)
 
             step += 1
             pbar.update(1)
