@@ -129,7 +129,8 @@ class LatentDecoder(nn.Module):
         x = self.blocks(x)                           # (B, 512, T)
         x = self.norm_mid(x)
         x = self.head_conv(x)                        # (B, 2048, T)
-        x = self.head_act(self.head_linear(x.transpose(1, 2))).transpose(1, 2)  # (B, 512, T)
+        x = self.head_act(x.transpose(1, 2))         # PReLU before linear (B, T, 2048)
+        x = self.head_linear(x).transpose(1, 2)      # (B, 512, T)
         # Flatten: (B, 512, T) → (B, T*512) → (B, 1, T*512)
         B, C, T = x.shape
         return x.permute(0, 2, 1).reshape(B, 1, T * C)  # (B, 1, T_audio)
