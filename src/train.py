@@ -14,9 +14,11 @@ Usage:
 
 import argparse
 import os
+from pathlib import Path
 
 import torch
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 from . import constants as C
 from .config import get_args
@@ -54,10 +56,13 @@ def train(args: argparse.Namespace):
 
     dataset = AudioDataset(args.data_dir, args.segment_length, C.SAMPLE_RATE)
     loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True,
-                        num_workers=4, pin_memory=True, drop_last=True)
+                        num_workers=0, pin_memory=True, drop_last=True)
 
     os.makedirs(args.checkpoint_dir, exist_ok=True)
     step = 0
+
+    epoch = 0
+    pbar = tqdm(total=args.max_steps, desc="training", dynamic_ncols=True, initial=step)
 
     while step < args.max_steps:
         for batch in loader:
@@ -94,16 +99,14 @@ def train(args: argparse.Namespace):
             opt_g.step()
 
             step += 1
-
-            if step % args.log_every == 0:
-                print(
-                    f"step={step:>7d}  "
-                    f"g={g_loss.item():.4f}  "
-                    f"d={d_loss.item():.4f}  "
-                    f"recon={recon.item():.4f}  "
-                    f"adv={adv_mpd.item() + adv_mrd.item():.4f}  "
-                    f"fm={fm_mpd.item() + fm_mrd.item():.4f}"
-                )
+            pbar.update(1)
+            pbar.set_postfix(
+                epoch=epoch,
+                g=f"{g_loss.item():.4f}",
+                d=f"{d_loss.item():.4f}",
+                recon=f"{recon.item():.4f}",
+                lr=f"{opt_g.param_groups[0]['lr']:.2e}",
+            )
 
             if step % args.save_every == 0:
                 ckpt = {
@@ -117,10 +120,17 @@ def train(args: argparse.Namespace):
                 path = os.path.join(args.checkpoint_dir, f"ae_{step:07d}.pt")
                 torch.save(ckpt, path)
                 print(f"Saved checkpoint: {path}")
+                old = sorted(Path(args.checkpoint_dir).glob("ae_*.pt"))[:-args.keep_ckpts]
+                for p in old:
+                    p.unlink()
 
             if step % 1000 == 0:
                 sched_g.step()
                 sched_d.step()
+
+        epoch += 1
+
+    pbar.close()
 
 
 def main():
